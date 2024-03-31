@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <style>
+        table {
+            font-family: Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        td, th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #ddd;
+        }
+        th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+            background-color: #04AA6D;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<h1>景點觀光展覽資訊</h1>
+<div>
+    <input type="text" id="searchInput" placeholder="輸入關鍵字">
+    <button onclick="search()">搜尋</button>
+</div>
+<table id="csie">
+    <tr>
+        <th>名稱</th>
+        <th>地點</th>
+        <th>票價</th>
+    </tr>
+</table>
+<div>
+    <button onclick="prevPage()">上一頁</button>
+    <span id="currentPage">1</span>/<span id="totalPages">1</span>
+    <button onclick="nextPage()">下一頁</button>
+</div>
+<script>
+var dataset = []; // 存儲從API加載的原始數據
+    var filteredData = []; // 存儲篩選後的數據
+    var currentPage = 1; // 當前頁數
+    var recordsPerPage = 10; // 每頁顯示的記錄數
+
+    // 從API加載數據
+    var openUrl = "https://cloud.culture.tw/frontsite/trans/SearchShowAction.do?method=doFindTypeJ&category=6";
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', openUrl, true);
+    xhr.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+            dataset = JSON.parse(this.responseText);
+            filteredData = dataset; // 初始情況下，篩選後的數據是全部數據
+            updatePagination(); // 更新分頁並顯示第一頁
+        }
+    };
+    xhr.send();
+
+    function updatePagination() {
+        document.getElementById('totalPages').textContent = numPages(); // 更新總頁數
+        changePage(1); // 加載數據後顯示第一頁
+    }
+
+    function numPages() {
+        return Math.ceil(filteredData.length / recordsPerPage);
+    }
+
+    function prevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            changePage(currentPage);
+        }
+    }
+
+    function nextPage() {
+        if (currentPage < numPages()) {
+            currentPage++;
+            changePage(currentPage);
+        }
+    }
+
+    function changePage(page) {
+        var table = document.getElementById("csie");
+        table.innerHTML = "<tr><th>名稱</th><th>地點</th><th>票價</th></tr>"; // 重設表格標題
+
+        var startIndex = (page - 1) * recordsPerPage;
+        var endIndex = Math.min(startIndex + recordsPerPage, filteredData.length);
+
+        for (var i = startIndex; i < endIndex; i++) {
+            var row = table.insertRow(-1);
+            var cell1 = row.insertCell(0);
+            var cell2 = row.insertCell(1);
+            var cell3 = row.insertCell(2);
+            cell1.innerHTML = filteredData[i].title;
+            cell2.innerHTML = filteredData[i].showInfo[0]?.location || '未知';
+            cell3.innerHTML = filteredData[i].showInfo[0]?.price || '未知';
+        }
+
+        document.getElementById("currentPage").textContent = page;
+    }
+
+    function search() {
+        var input = document.getElementById('searchInput').value.toLowerCase();
+        filteredData = dataset.filter(function(item) {
+            return item.title.toLowerCase().includes(input) ||
+                   item.showInfo[0]?.location.toLowerCase().includes(input) ||
+                   item.showInfo[0]?.price.toLowerCase().includes(input);
+        });
+        updatePagination();
+    }
+</script>
+</body>
+</html>
